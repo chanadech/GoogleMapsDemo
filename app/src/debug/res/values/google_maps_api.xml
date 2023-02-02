@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+<!--    SHA1 CERTIFICATE DEBUG FINGERPRINT:
+        09:12:FE:0C:AF:5F:B5:87:45:92:CC:A3:99:5C:87:63:5B:18:D2:A7-->
+
+<!--   APIKEY:AIzaSyBMgZpxwrtgL&#45;&#45;loXsCMOyrhnICNfvEB-c-->
+
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">AIzaSyBMgZpxwrtgL--loXsCMOyrhnICNfvEB-c</string>
+
+</resources>
+
+
+<!--dev ใข้อันนี้-->

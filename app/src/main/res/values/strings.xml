@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">GoogleMapsDemo</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="normal">Normal</string>
+    <string name="hybrid">Hybrid</string>
+    <string name="terrain">terrain</string>
+    <string name="satellite">Satellite</string>
+    <string name="none_map">None</string>
+    <string name="fert_mode_title_sprayer">Sprayer</string>
+    <string name="fert_mode_title_spreader">Spreader</string>
+
+</resources>
