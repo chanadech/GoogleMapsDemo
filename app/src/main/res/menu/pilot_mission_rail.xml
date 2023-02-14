@@ -18,9 +18,5 @@
         android:title="@string/tmp_mission_title"
         android:icon="@drawable/ic_strategy_filled_24dp" />
 
-    <item
-        android:id="@+id/mission_tab_dev"
-        android:title="DEV"
-        android:icon="@drawable/ic_bug_report_filled_24dp" />
 
 </menu>

@@ -190,7 +190,7 @@
                             layout="@layout/setting_waypoint"
                             android:layout_width="256dp"
                             android:layout_height="wrap_content"
-                            android:visibility="visible" />
+                            android:visibility="gone" />
 
 
                     </FrameLayout>

@@ -1,41 +1,50 @@
 package com.example.googlemapsdemo
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.Drawable
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.lifecycleScope
-
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
 import com.example.googlemapsdemo.databinding.ActivityMapsBinding
 import com.example.googlemapsdemo.misc.TypeAndStyle
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMap.OnCircleClickListener
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener
-import com.google.android.gms.maps.GoogleMap.OnPolylineClickListener
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListener, OnMarkerDragListener, OnPolylineClickListener    // inherit onMapReadyCallback เพื่อใช้ getMapAsync (mapFragment เรียก)
+
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListener, OnMarkerDragListener, OnCircleClickListener     // inherit onMapReadyCallback เพื่อใช้ getMapAsync (mapFragment เรียก)
 {
     // shift + f6 = rename
     // control + Q = ดู doc ฟังก์ขัน
     private lateinit var map: GoogleMap                              // 1. initial map variable ก่อน เพื้่อเอาไปใช้ใน  onMapReady function
     private lateinit var binding: ActivityMapsBinding
+
+
+    private val shapes by lazy  {Shapes()}
     private val typeAndStyle by lazy { TypeAndStyle() } // ใช้ by lazy เพราะให้ lightweight เพื่อรอจน  constructor ของ class TypeAndStyle โดนเรียกแล้วค่อยทำ
     private val cameraViewport by lazy {CameraViewport() }
-
+    private val overLays by lazy {Overlays()}
 
     private val bhiraj = LatLng(13.721437987285286, 100.52218794741914)
     private val ati = LatLng(14.084037703890884, 100.42053077551579)
@@ -52,6 +61,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListe
             .findFragmentById(R.id.map) as SupportMapFragment        // Google Map api -> สร้างตัว mapContainer ทั้งหมด -> container ในที่นี้คือ supportMapFragment
 
         mapFragment.getMapAsync(this)                         //getMapAsync ใช้ call onMapReady เมิ่อ google map พร้อมทำงาน
+    }
+
+
+    private fun handleLeftMenuClicked(){
+//        binding.missionRail.selectedItemId
+        val fieldMenu = binding.missionRail.menu.findItem(R.id.mission_tab_field)
+        val missionMenu = binding.missionRail.menu.findItem(R.id.mission_tab_mission)
+
+//        if (fieldMenu.isChecked)
     }
 
     // control + o -> เอาไว้ ovverride method
@@ -101,13 +119,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListe
         map.uiSettings.apply {
             isZoomControlsEnabled = true        // ทำให้มีปุ่ม +- สำหรับ zoomเข้าออก เพิ่มขึ้นมาในหน้าแอป
             isCompassEnabled = true             // ทำให้มีเข็มทิศโผล่มุมซ้ายเวลากด rotate ถ้ากดเข็มทิศมันก็จะพากลับมาที่ default location ละก็ค่อยๆหายไป อยาก disable ก็แค่ set fault
+            isMyLocationButtonEnabled = true    // ทำให้มาโลเคชั่นของเครื่องที่ใช้อยู่โดยตรง -> ใช้ได้ต่อเมื่อ myLocation layer enable นะ -> เดี่ยวทำทีหลัง
 
             /*
+
             isMapToolbarEnabled = false         // ปกติกด marker แดงๆแล้วจะมี toolbar ที่ไว้ให้ user กดเลือกขึั้น ถ้าไม่อยากให้ชึ้นก็ปิดไว้ได้เลย
-            isMyLocationButtonEnabled = true    // ทำให้มาโลเคชั่นของเครื่องที่ใช้อยู่โดยตรง -> ใช้ได้ต่อเมื่อ myLocation layer enable นะ -> เดี่ยวทำทีหลัง
             isZoomGesturesEnabled  = false      // ทำให้ไม่สามารถใช้มือกดซูมเข้าออกได้ ต้องใช้ปุ่มเท่านั้น (USE CASE -> FIX ร้านค้าให้อยู่ตามโลนี้ ไม่อยากให้ user zoom เข้าออกบรรยากาศข้างๆ)
             isScrollGesturesEnabled = false     // fix -> scroll หน้าจอ map ไปไหนไม่ได้แล้ว*/
         }
+
+        // handle location permission
 
 
 /***  Map padding -> ช่วยแก้ปัญหาเวลาเรามีการเพิ่ม view ต่างๆไม่ให้ทับกับ map ธรรมดา เข่น side bar -> สมมติไม่มี ปุ่ม +- ที่ทำไว้ก็อาจจะหายไปได้ -> ใช้ map object ในการทำนะ */
@@ -191,8 +212,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListe
         }
 // end of coroutine scope */
 
-/*** call clicked event handler */
+/*** call clicked event handler -> เอาออกกะใช้จัดกด map ได้เลย */
 //        onMapClick()
+
         onMapLongClick()
 
 
@@ -251,45 +273,148 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListe
 /***   CUSTOM INFO of MARKER -> สร้าง res layout file, สร้าง adapter class implement InfoWindowAdapter จะ ให้่เรา override 2 function จากนั้นสร้างฟังก์ขันไว้ render เป็นอันเสร็จ  */
     map.setInfoWindowAdapter(CustomInfoAdapter(this)) // เรียก setInfoWindowAdapter และ pass CustomInfoAdapter ที่สร้างไป มันจะขอ context คือ this (Activity นี้)
 
-/**  POLY-LINES -> a set of lat-long ที่มาจากเส้นที่เชื่อมต่อกัน คือมาจาก location ตามลำดับที่สั่ง*/
        lifecycleScope.launch{       //ใช้ coroutine เพราะจะลองเรียก delay
-           addPolyLines()
+/**  POLY-LINES -> a set of lat-long ที่มาจากเส้นที่เชื่อมต่อกัน คือมาจาก location ตามลำดับที่สั่ง*/
+//           addPolyLines()
+           shapes.addPolyLines(map)
+
+/*** POLY-GON -> ประกาศ polygon ที่สร้างใน shape */
+            shapes.addPolygon(map)
+
+/** CIRCLE   -> ประกาศรูปวงกลมทัั้สร้างใน shape */
+            shapes.addCircle(map) // ตัวฟังก์ชันใช้ suspend เวลา call ก็เอาไว้ใน lifecycleScope.launch นะ
        }
+
 /*** polyline with clickListeners -> implement class with OnPolyLineClickListener ก่อน แล้วก็มาเรียก override method -> onPolylineClick ,
                                  -> ใน onMapReady ให้ add map.setOnPolyLineClickListener(this)
                                  -> หลังจากนั้นใน onPolylineClick ที่ overide มา ก็ทำ logic ที่อยากทำได้ เช่นโชว์ toast
                                  -> ใน addPolyline.() อย่าลืมเพิ่ม clickable(true) เพราะปกติแล้ว default click มันเป็น false
  */
+        //map.setOnPolylineClickListener (this) // กรณี polyline อยู่ใน activity
+        map.setOnPolylineClickListener { polyline ->
+            Toast.makeText(
+                this,
+//                polyline.tag as String? ,
+                "polyline clicked",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 
-    map.setOnPolylineClickListener (this)
+ /**** Polygon -> คล้าย poly line ตรงที่มันประกอบไปด้วย series of coordinate */
+        map.setOnPolygonClickListener(shapes) // แบบ handle click ที่อีก class นึง
+
+        map.setOnCircleClickListener(this) // แบบ implement circle ที่ class ที่เรียกใช้ pass this(activity) ได้เลย อย่าลืม overide ฟังก์ชันที่เอาไว้ handle ข้างล่างนะ
+
+
+ /*** Ground Overlays -> ซุมเข้าซุมออกเหมือนเดิม แต่ถ้าหมุนไปมา มันจะยังคงติดที่เดิม ไม่หมุนตาม */
+
+        // overlays.addGroundOverlay(map) // แสดง ground overlay แบบปกติ
+
+        val groundOverlayCustom = overLays.addGroundOverlayCustom(map) // จะโชว์ remove ground overlay หลังจากผ่านไป 4 วิ ด้วย object ground overlay ที่เราสร้างมาใหม่
+        lifecycleScope.launch{
+            delay(4000L)
+             // groundOverlayCustom?.remove()            // REMOVE GROUND OVERLAY ->   ลองใช้แบบ custom ground overlay หายไปแหล่ว
+                groundOverlayCustom?.transparency = 0.5f // SET TRANSPARENT ของ GROUND OVERLAY -> 1 คือ FULL VISIBILITY, 0 คือ BASIC VISIBILITY -> 0.5 คือความทึบครึ่งนึงของการซ้อน
+                groundOverlayCustom?.setImage(BitmapDescriptorFactory.fromResource(android.R.drawable.ic_menu_compass))         // CHANGE IMAGE PROGRAMMATICALLY -> ผ่าน 4 วิ รูปเปลี่ยนจากที่ set ไว้มาเป็นรูปใหม่อันนี้
+        }
+
+        /* วิถีจัดเก็บ data object เอาไว้ข้างใน ground overlay เพื่อเอาไว้ใข้กับ marker, shape และ overlay -> ใช้ "Tag" -> มีประโยชน์เช่น เมื่อเราต้องการจัดลำดับความสำคัญจากการใข้ set ZIndex ซึ่งเอาไว้แยกความแตกต่่างของการซ้อนทับพื้นที่จากที่อื่นได้ */
+       val groundOverlayWithTag = overLays.addGroundOverlayWithTag(map)
+        lifecycleScope.launch{
+            delay(4000L)
+            Toast.makeText(this@MapsActivity,"Tag received overlay: ${groundOverlayWithTag?.tag}",Toast.LENGTH_SHORT).show() // ลองให้ Log โชว์ tag ที่ pass มาจาก Overlay class หลังจากผ่านไป 4 วิ
+        }
+
+
+/*** Location layer -> เอาไว้ดู current location ของ user
+  -> permission 2 รานการ -> final location permission allow gps
+                         -> ควรมีการ handle ในกรณีไม่ allow permission
+                         -> How -> add permission require in manifest -> -> ACCESS COARSE, ACCESS FINE location (allow wifi, cellular เพื่อกำหนดตำแหน่งอุปกรณ์ -> ค่าที่ได้จาก Query จะส่งคืนตำแหน่งด้วยความแม่นยำ)
+                                -> add map.uiSettings.apply{ isMyLocationButtonEnabled = true }   // ทำให้มาโลเคชั่นของเครื่องที่ใช้อยู่โดยตรง
+                                -> add map.isMyLocationEnabled = true in onMapReady
+                                -> add function to handle -> manual สร้างฟังก์ชั่นชื่อ checkPermission() -> ละเรียกใช้ใน onMapReady
+                                -> override onReuestPermissionResult() ละก็ handle ตามด้านล่าง
+                                **ใข้ library ชื่อ easy permission แทนการไปนั่งสร้าง   checkPermission() -> work when require run time permission (ยังไม่ใช่)
+                                ** OUTPUT จะมี ICON มุมขวาขึ้น กดแล้วมันก็จะพามา LOCATION เราเลย
+ *                              -> NOTE -> GET DATA จากมันไม่ได้นะ แค่ช่วยให่้เช้าถึงLOCATIONได้ง่ายเฉยๆ
+ *
+ * */
+
+        checkLocationPermission()
     }
 
-    // polyline -> ปกติ จะต้องกำหนดจุดหรือตำแหน่งที่แน่นอนของพื้นที่เราก่อนในการทำการเชื่อม -> จุดสองจุดที่กำหนด ex pakkret, paragon
-    private suspend fun addPolyLines(){
-        val polyline = map.addPolyline(
-            PolylineOptions().apply {      // CUSTOM poly lines
-                add(bhiraj,ati,futurePark) // รับ lat lon object (start point to end point เรียงตามลำดับที่กำหนด)
-                width(5f)
-                color(Color.BLUE)
-                geodesic(true) // geodesic จะช่วยให้วาดเส้น ตาม actual latlng ไม่ใช่แค่เปนเส้นตรง
-                clickable(true)
-            }
+//
+    /**  ย้าย Polyline ไป Shape class แทน -> อย่าลืมเอา OnPolylineClickListener ที่ IMPLEMENT ต่อ class ข้างบนออกไปด้วย ไม่งั้่นจะเรียก onPolylineClick ไม่ได้
+    polyline -> ปกติ จะต้องกำหนดจุดหรือตำแหน่งที่แน่นอนของพื้นที่เราก่อนในการทำการเชื่อม -> จุดสองจุดที่กำหนด ex pakkret, paragon  */
+    /* private suspend fun addPolyLines(){
+            val polyline = map.addPolyline(
+                PolylineOptions().apply {      // CUSTOM poly lines
+                    add(bhiraj,ati,futurePark) // รับ lat lon object (start point to end point เรียงตามลำดับที่กำหนด)
+                    width(5f)
+                    color(Color.BLUE)
+                    geodesic(true) // geodesic จะช่วยให้วาดเส้น ตาม actual latlng ไม่ใช่แค่เปนเส้นตรง
+                    clickable(true)
+                }
+            )
+            delay(5000)      // หลังจาก 5 วิ polyline จะเปลี่ยนเส้นพิกัด จากตรงกลางคือ ati เป็น carnegie
+            val newList = listOf<LatLng>(
+                bhiraj,pathumThani,futurePark
+            )
+            polyline.points = newList // polyline อันนี้คือ return type ของเจ้า map.addPolyline{ ทั้งหลายด้านบน
+                                      // points -> Change shape of polyline -> เอาไว้กำหนดจุดหรือพิกัดใหม่ที่อยากทำการเปลี่ยนแปลง เช่นจากเดืมจุด   a->b อยากให้ a->c แทน ก็ใข้ points เอา
+                                      // อันนี้เอาตัวพิกัดใหม่จาก list ที่สร้างมาใ้ช้ (newList)
+
+        }*/
+
+// Handle permission
+private fun checkLocationPermission(){
+    if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){  //เช็ตว่าขอ permission ได้ไหม ถ้าได้ โชว์ toast ละก็เปิดใช้งาน myLocation layer ระยะไกล
+        map.isMyLocationEnabled = true
+        Toast.makeText(this,"Already Enabled", Toast.LENGTH_SHORT).show()
+
+    } else {
+        requestPermission() //ไม่มี permission ให้ขอใหม่
+    }
+}
+
+private fun requestPermission(){           // permission โดนปฎิเสธ เข้านี้
+        ActivityCompat.requestPermissions( // ขอตำแหน่งสุดท้ายในการอนุญาติใหม่ ด้วย code 1
+            this,
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            1
         )
-        delay(5000)      // หลังจาก 5 วิ polyline จะเปลี่ยนเส้นพิกัด จากตรงกลางคือ ati เป็น carnegie
-        val newList = listOf<LatLng>(
-            bhiraj,pathumThani,futurePark
-        )
-        polyline.points = newList // polyline อันนี้คือ return type ของเจ้า map.addPolyline{ ทั้งหลายด้านบน
-                                  // points -> Change shape of polyline -> เอาไว้กำหนดจุดหรือพิกัดใหม่ที่อยากทำการเปลี่ยนแปลง เช่นจากเดืมจุด   a->b อยากให้ a->c แทน ก็ใข้ points เอา
-                                  // อันนี้เอาตัวพิกัดใหม่จาก list ที่สร้างมาใ้ช้ (newList)
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if(requestCode != 1){ // เช็ค request ไม่ใช่ค่าที่กำหนด เราต้อง return ค่าจากฟังก์ชัน ถ้าไม่ใช่ให้ return เพื่อหลุดออกจากฟังก์ชันไปเข้าเช็ตใหม่ -> 1 มาจากค่าที่เรากำหนดใน checkLocationPermission เพื่อเอาไว้ handle
+            return
+        }
+        if(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED){ // เช็คว่าได้รับ permission จริงไหม ถ้าเป็น 1 จะเรียกดูว่า permision ที่ได้นั้นตรงกันหรือไม่
+            Toast.makeText(this,"Granted", Toast.LENGTH_SHORT).show()    // permission ได้รับการยืนยันจาก user -> display toast, เปิด enable layer
+            map.isMyLocationEnabled = true // error => SUPPERESS เอา
+        } else {
+            Toast.makeText(this,"We need your permission", Toast.LENGTH_SHORT).show() // อื่นๆก็บอกว่าไปขอ permission ใหม่
+        }
 
     }
 
-    override fun onPolylineClick(p0: Polyline) {
-        Toast.makeText(this, "PolylineClicked", Toast.LENGTH_SHORT).show()
-    }
 
-    // CONVERT VECTOR TO BITMAP THAT USE FOR THE CUSTOM MARKER -> ใช้บ่อย
+    /*  override fun onPolylineClick(p0: Polyline) {
+          Toast.makeText(this, "PolylineClicked", Toast.LENGTH_SHORT).show()} */
+
+// Handle circle clicked อย่าลืม implement ข้างบน
+override fun onCircleClick(p0: Circle) {
+    Toast.makeText(this, "CircleClicked", LENGTH_SHORT).show()
+}
+
+
+// CONVERT VECTOR TO BITMAP THAT USE FOR THE CUSTOM MARKER -> ใช้บ่อย
     private fun fromVectorToBitmap(id:Int, color:Int):BitmapDescriptor {
         val vectorDrawable: Drawable?  = ResourcesCompat.getDrawable(resources,id, null)// อาจเป็น null ได้
         if (vectorDrawable == null){
@@ -366,6 +491,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListe
 
 
 
-
-
 }
+
+
+
