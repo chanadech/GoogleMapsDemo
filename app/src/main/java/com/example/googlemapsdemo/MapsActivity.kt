@@ -29,6 +29,7 @@ import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.maps.android.data.geojson.GeoJsonLayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -340,7 +341,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, OnMarkerClickListe
  *
  * */
 
-        checkLocationPermission()
+//        checkLocationPermission()
+
+ /*** GEOJSON -*/
+ // create geojson file using -> https://geojson.io/
+
+        val layer = GeoJsonLayer(map, R.raw.map, this) // import GEOJSon file in raw
+        layer.addLayerToMap() // add geojson to our map
+
+        // custom polygon style -> ex) stroke or background
+        val polygonStyle = layer.defaultPolygonStyle
+        polygonStyle.apply {
+            fillColor = ContextCompat.getColor(this@MapsActivity, R.color.purple_200) // can use default color class -> Color.BLUE
+        }
+
+        layer.setOnFeatureClickListener {
+            Log.d("MapsActivity", "Feature ${it.getProperty("country")} ") // output: Feature thailand -> thailand from GEOJOSN that have property = "country"
+        }
+
+        for(feature in layer.features){
+            if (feature.hasProperty("country")){ // loop to check the feature in GEOJSON that have a property name country
+                Log.d("MapsActivity", "Success")
+            }
+        }
     }
 
 //
